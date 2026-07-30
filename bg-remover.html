@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="theme.js"></script>
+  <title>Background Remover — Actually Free Tools</title>
+  <meta name="description" content="Remove image backgrounds instantly in your browser using on-device AI. No uploads, no API key, free forever." />
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <link rel="stylesheet" href="shared.css" />
+
+  <script type="importmap">
+  {
+    "imports": {
+      "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0-dev.20250206-d981b153d3/dist/ort.mjs",
+      "onnxruntime-web/webgpu": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0-dev.20250206-d981b153d3/dist/ort.webgpu.mjs",
+      "onnxruntime-web/wasm": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0-dev.20250206-d981b153d3/dist/ort.wasm.mjs"
+    }
+  }
+  </script>
+
+  <style>
+    /* ── Layout ── */
+    #upload-section { flex: 1; }
+    #editor-section { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 64px 24px;
+      text-align: center;
+      flex: 1;
+    }
+
+    .progress-wrap.show { display: flex; }
+
+    .progress-bar-track {
+      width: min(360px, 100%);
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .progress-label {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* ── Result toolbar ── */
+    .result-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .toolbar-sep {
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .toolbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+    .bg-label {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    .bg-swatch-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .bg-swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .bg-swatch.active { border-color: var(--accent); }
+    .bg-swatch.transparent { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Crect width='5' height='5' fill='%23ccc'/%3E%3Crect x='5' y='5' width='5' height='5' fill='%23ccc'/%3E%3Crect x='5' width='5' height='5' fill='%23eee'/%3E%3Crect y='5' width='5' height='5' fill='%23eee'/%3E%3C/svg%3E"); }
+    .bg-swatch.white  { background: #fff; }
+    .bg-swatch.black  { background: #111; }
+
+    .bg-color-input {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      padding: 0;
+      cursor: pointer;
+      background: none;
+    }
+
+    .bg-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+    .bg-color-input::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+    /* ── Bg image button ── */
+    .bg-img-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: var(--surface2);
+      transition: border-color 0.15s;
+      flex-shrink: 0;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .bg-img-btn.active { border-color: var(--accent); }
+
+    .bg-img-btn canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ── Brush bar ── */
+    .brush-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .brush-bar.show { display: flex; }
+
+    .brush-mode-btn { padding: 5px 12px; font-size: 0.82rem; }
+    .brush-mode-btn.active { background: rgba(var(--accent-rgb),0.15); border-color: var(--accent); color: var(--accent); }
+
+    /* ── Split panel ── */
+    .panels {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel + .panel { border-left: 1px solid var(--border); }
+
+    .panel-label {
+      padding: 8px 16px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .panel-canvas {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      padding: 24px;
+      background: var(--bg);
+    }
+
+    .panel-canvas.checkerboard {
+      background-color: #2a2a2a;
+      background-image:
+        linear-gradient(45deg, #333 25%, transparent 25%),
+        linear-gradient(-45deg, #333 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #333 75%),
+        linear-gradient(-45deg, transparent 75%, #333 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+
+    .panel-canvas img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    /* Result canvas has a coloured background layer */
+    .result-wrapper {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    #result-bg-canvas {
+      position: absolute;
+      inset: 0;
+      border-radius: 4px;
+    }
+
+    #result-canvas {
+      position: relative;
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 700px) {
+      .panels { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+      .panel + .panel { border-left: none; border-top: 1px solid var(--border); }
+      .result-toolbar { gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="index.html" class="logo">
+    <i class="ti ti-sparkles"></i>
+    <span class="shiny-text">Actually Free Tools</span>
+  </a>
+  <nav class="site-nav">
+    <a href="pdf-editor.html" class="nav-link">
+      <i class="ti ti-file-type-pdf"></i>
+      <span>PDF Editor</span>
+    </a>
+    <a href="bg-remover.html" class="nav-link active">
+      <i class="ti ti-eraser"></i>
+      <span>BG Remover</span>
+    </a>
+    <a href="photo-editor.html" class="nav-link">
+      <i class="ti ti-adjustments-horizontal"></i>
+      <span>Photo Editor</span>
+    </a>
+  </nav>
+  <div class="header-actions">
+    <button class="btn-icon" id="theme-toggle" title="Toggle theme">
+      <i class="ti ti-moon"></i>
+    </button>
+    <button class="btn-ghost" id="open-new-btn" style="display:none">
+      <i class="ti ti-folder-open"></i>
+      <span>New image</span>
+    </button>
+  </div>
+</header>
+
+<!-- Upload section -->
+<div id="upload-section" class="drop-zone dot-bg">
+  <div class="drop-box card-beam" id="drop-box">
+    <i class="ti ti-eraser"></i>
+    <h2>Drop an image here</h2>
+    <p>PNG, JPG, WebP supported</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <button class="btn-primary" onclick="event.stopPropagation(); imageInput.click()">
+        <i class="ti ti-photo-up"></i> Choose image
+      </button>
+      <button class="btn-ghost" onclick="event.stopPropagation(); batchInput.click()">
+        <i class="ti ti-stack"></i> Batch (multiple)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Progress section -->
+<div class="progress-wrap" id="progress-section">
+  <div class="spinner"></div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+  <p class="progress-label" id="progress-label">Loading AI model… (first run ~20 MB, cached after)</p>
+</div>
+
+<!-- Batch section -->
+<div class="progress-wrap" id="batch-section" style="gap:12px">
+  <h3 style="color:var(--text);margin:0">Batch Processing</h3>
+  <div id="batch-list" style="width:min(400px,100%);display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto"></div>
+  <div class="progress-bar-track" style="width:min(360px,100%)">
+    <div class="progress-bar-fill" id="batch-progress-fill"></div>
+  </div>
+  <p class="progress-label" id="batch-progress-label">Processing…</p>
+</div>
+
+<!-- Editor section -->
+<div id="editor-section">
+  <div class="result-toolbar">
+    <span class="bg-label">Background</span>
+    <div class="bg-swatch-row">
+      <div class="bg-swatch transparent active" data-bg="transparent" title="Transparent"></div>
+      <div class="bg-swatch white" data-bg="white" title="White"></div>
+      <div class="bg-swatch black" data-bg="black" title="Black"></div>
+      <input type="color" class="bg-color-input" id="bg-color-picker" value="#6c63ff" title="Custom color" />
+      <button class="bg-img-btn" id="bg-img-btn" title="Replace with image">
+        <i class="ti ti-photo" id="bg-img-icon"></i>
+      </button>
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-right">
+      <button class="btn-ghost" id="open-new-btn2">
+        <i class="ti ti-folder-open"></i>
+        <span>New image</span>
+      </button>
+      <button class="btn-ghost" id="copy-btn">
+        <i class="ti ti-copy"></i>
+        <span>Copy</span>
+      </button>
+      <button class="btn-primary" id="download-btn">
+        <i class="ti ti-download"></i>
+        <span>Download PNG</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="brush-bar" id="brush-bar">
+    <span style="font-size:0.82rem;color:var(--text-muted)">Touch-up:</span>
+    <button class="btn-ghost brush-mode-btn active" id="brush-erase-btn">
+      <i class="ti ti-eraser"></i> Erase
+    </button>
+    <button class="btn-ghost brush-mode-btn" id="brush-restore-btn">
+      <i class="ti ti-paint"></i> Restore
+    </button>
+    <span style="font-size:0.82rem;color:var(--text-muted);margin-left:8px">Size</span>
+    <input type="range" id="brush-size" min="3" max="60" value="15" style="width:90px;accent-color:var(--accent)" />
+    <span id="brush-size-val" style="font-size:0.82rem;color:var(--accent);min-width:24px">15</span>
+  </div>
+
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-label">Original</div>
+      <div class="panel-canvas" id="original-panel">
+        <img id="original-img" src="" alt="Original" />
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Background removed</div>
+      <div class="panel-canvas checkerboard" id="result-panel">
+        <div class="result-wrapper" id="result-wrapper">
+          <canvas id="result-bg-canvas" style="display:none"></canvas>
+          <canvas id="result-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="imageInput" accept="image/*" style="display:none" />
+<input type="file" id="bgImageInput" accept="image/*" style="display:none" />
+<input type="file" id="batchInput" accept="image/*" multiple style="display:none" />
+<div id="toast-container"></div>
+
+<script type="module">
+  import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/index.mjs';
+
+  const uploadSection   = document.getElementById('upload-section');
+  const progressSection = document.getElementById('progress-section');
+  const editorSection   = document.getElementById('editor-section');
+  const dropBox         = document.getElementById('drop-box');
+  const imageInput      = document.getElementById('imageInput');
+  const bgImageInput    = document.getElementById('bgImageInput');
+  const originalImg     = document.getElementById('original-img');
+  const resultCanvas    = document.getElementById('result-canvas');
+  const resultBgCanvas  = document.getElementById('result-bg-canvas');
+  const progressFill    = document.getElementById('progress-fill');
+  const progressLabel   = document.getElementById('progress-label');
+
+  let resultBlob    = null;
+  let resultImage   = null;
+  let currentBg     = 'transparent';
+  let bgImageEl     = null;
+  let touchupMode   = 'erase';
+  let isBrushing    = false;
+  let originalAlpha = null;
+
+  function toast(msg, type = 'info') {
+    const el = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' error' : type === 'success' ? ' success' : '');
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  // ── Process image ──
+  async function processImage(file) {
+    if (!file.type.startsWith('image/')) {
+      toast('Please select an image file', 'error');
+      return;
+    }
+
+    uploadSection.style.display  = 'none';
+    progressSection.classList.add('show');
+    editorSection.style.display  = 'none';
+
+    const objectUrl = URL.createObjectURL(file);
+    originalImg.src = objectUrl;
+
+    try {
+      const resultBlobOut = await removeBackground(file, {
+        publicPath: window.location.origin + '/package/dist/',
+        model: 'medium',
+        progress: (key, current, total) => {
+          if (total > 0) {
+            const pct = Math.round((current / total) * 100);
+            progressFill.style.width = pct + '%';
+            if (key.includes('fetch') || key.includes('load')) {
+              progressLabel.textContent = `Loading AI model… ${pct}% (cached after first run)`;
+            } else {
+              progressLabel.textContent = `Removing background… ${pct}%`;
+            }
+          }
+        },
+      });
+
+      resultBlob  = resultBlobOut;
+      resultImage = await createImageBitmap(resultBlob);
+
+      resultCanvas.width  = resultImage.width;
+      resultCanvas.height = resultImage.height;
+      resultCanvas.getContext('2d').drawImage(resultImage, 0, 0);
+
+      resultBgCanvas.width  = resultImage.width;
+      resultBgCanvas.height = resultImage.height;
+
+      // Store original alpha for touch-up restore
+      const imgData = resultCanvas.getContext('2d').getImageData(0, 0, resultCanvas.width, resultCanvas.height);
+      originalAlpha = new Uint8Array(imgData.data.length >> 2);
+      for (let i = 0; i < originalAlpha.length; i++) originalAlpha[i] = imgData.data[i * 4 + 3];
+
+      progressSection.classList.remove('show');
+      editorSection.style.display = 'flex';
+      document.getElementById('open-new-btn').style.display = '';
+      document.getElementById('brush-bar').classList.add('show');
+      resultCanvas.style.cursor = 'crosshair';
+
+      applyBackground(currentBg);
+      toast('Background removed!', 'success');
+    } catch (e) {
+      progressSection.classList.remove('show');
+      uploadSection.style.display = '';
+      toast('Failed: ' + e.message, 'error');
+      console.error(e);
+    }
+  }
+
+  // ── Background overlay ──
+  function applyBackground(bg) {
+    currentBg = bg;
+    const bgCtx = resultBgCanvas.getContext('2d');
+    bgCtx.clearRect(0, 0, resultBgCanvas.width, resultBgCanvas.height);
+
+    if (bg === 'transparent') {
+      resultBgCanvas.style.display = 'none';
+      document.querySelector('.panel-canvas.checkerboard').style.background = '';
+    } else if (bg === 'image' && bgImageEl) {
+      resultBgCanvas.style.display = 'block';
+      bgCtx.drawImage(bgImageEl, 0, 0, resultBgCanvas.width, resultBgCanvas.height);
+    } else if (bg !== 'image') {
+      resultBgCanvas.style.display = 'block';
+      bgCtx.fillStyle = bg === 'white' ? '#ffffff' : bg === 'black' ? '#111111' : bg;
+      bgCtx.fillRect(0, 0, resultBgCanvas.width, resultBgCanvas.height);
+    }
+  }
+
+  // ── Background swatches ──
+  function setActiveSwatch(swatchEl) {
+    document.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
+    document.getElementById('bg-img-btn').classList.remove('active');
+    if (swatchEl) swatchEl.classList.add('active');
+  }
+
+  document.querySelectorAll('.bg-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      setActiveSwatch(swatch);
+      applyBackground(swatch.dataset.bg);
+    });
+  });
+
+  document.getElementById('bg-color-picker').addEventListener('input', e => {
+    setActiveSwatch(null);
+    applyBackground(e.target.value);
+  });
+
+  // ── Bg image replacement ──
+  document.getElementById('bg-img-btn').addEventListener('click', () => {
+    bgImageInput.click();
+  });
+
+  bgImageInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      bgImageEl = img;
+      URL.revokeObjectURL(url);
+
+      // Draw thumbnail onto the button
+      const btn = document.getElementById('bg-img-btn');
+      btn.innerHTML = '';
+      const thumbCanvas = document.createElement('canvas');
+      thumbCanvas.width  = 26;
+      thumbCanvas.height = 26;
+      thumbCanvas.getContext('2d').drawImage(img, 0, 0, 26, 26);
+      btn.appendChild(thumbCanvas);
+
+      setActiveSwatch(null);
+      btn.classList.add('active');
+      applyBackground('image');
+    };
+    img.src = url;
+    e.target.value = '';
+  });
+
+  // ── Copy to clipboard ──
+  document.getElementById('copy-btn').addEventListener('click', async () => {
+    if (!resultCanvas) return;
+    try {
+      const blob = await new Promise(resolve => resultCanvas.toBlob(resolve, 'image/png'));
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast('Copied to clipboard!', 'success');
+    } catch (e) {
+      toast('Copy failed — try downloading instead', 'error');
+    }
+  });
+
+  // ── Touch-up brush ──
+  function paintBrush(cx, cy) {
+    const r = +document.getElementById('brush-size').value;
+    const ctx = resultCanvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, resultCanvas.width, resultCanvas.height);
+    const d = imgData.data;
+    const w = resultCanvas.width, h = resultCanvas.height;
+
+    const rect = resultCanvas.getBoundingClientRect();
+    const px = Math.round((cx - rect.left) * (w / rect.width));
+    const py = Math.round((cy - rect.top)  * (h / rect.height));
+
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (dx * dx + dy * dy > r * r) continue;
+        const x = px + dx, y = py + dy;
+        if (x < 0 || x >= w || y < 0 || y >= h) continue;
+        const idx = (y * w + x) * 4;
+        if (touchupMode === 'erase') {
+          d[idx + 3] = 0;
+        } else {
+          d[idx + 3] = originalAlpha ? originalAlpha[y * w + x] : 255;
+        }
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  resultCanvas.addEventListener('mousedown', e => { isBrushing = true; paintBrush(e.clientX, e.clientY); });
+  resultCanvas.addEventListener('mousemove', e => { if (isBrushing) paintBrush(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', () => { isBrushing = false; });
+
+  document.getElementById('brush-erase-btn').addEventListener('click', () => {
+    touchupMode = 'erase';
+    document.getElementById('brush-erase-btn').classList.add('active');
+    document.getElementById('brush-restore-btn').classList.remove('active');
+  });
+
+  document.getElementById('brush-restore-btn').addEventListener('click', () => {
+    touchupMode = 'restore';
+    document.getElementById('brush-restore-btn').classList.add('active');
+    document.getElementById('brush-erase-btn').classList.remove('active');
+  });
+
+  document.getElementById('brush-size').addEventListener('input', e => {
+    document.getElementById('brush-size-val').textContent = e.target.value;
+  });
+
+  // ── Download ──
+  document.getElementById('download-btn').addEventListener('click', async () => {
+    if (!resultBlob) return;
+
+    if (currentBg === 'transparent') {
+      const blob = await new Promise(resolve => resultCanvas.toBlob(resolve, 'image/png'));
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href     = url;
+      a.download = 'background-removed.png';
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      const tmp    = document.createElement('canvas');
+      tmp.width    = resultCanvas.width;
+      tmp.height   = resultCanvas.height;
+      const tmpCtx = tmp.getContext('2d');
+      if (currentBg === 'image' && bgImageEl) {
+        tmpCtx.drawImage(bgImageEl, 0, 0, tmp.width, tmp.height);
+      } else {
+        tmpCtx.fillStyle = currentBg === 'white' ? '#ffffff' : currentBg === 'black' ? '#111111' : currentBg;
+        tmpCtx.fillRect(0, 0, tmp.width, tmp.height);
+      }
+      tmpCtx.drawImage(resultCanvas, 0, 0);
+      tmp.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href     = url;
+        a.download = 'background-removed.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    }
+    toast('Image downloaded!', 'success');
+  });
+
+  // ── File input ──
+  imageInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) processImage(file);
+    imageInput.value = '';
+  });
+
+  // ── Drag & drop ──
+  dropBox.addEventListener('click', () => imageInput.click());
+  dropBox.addEventListener('dragover', e => { e.preventDefault(); dropBox.classList.add('dragover'); });
+  dropBox.addEventListener('dragleave', () => dropBox.classList.remove('dragover'));
+  dropBox.addEventListener('drop', e => {
+    e.preventDefault();
+    dropBox.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) processImage(file);
+  });
+
+  // ── Batch mode ──
+  async function processBatch(files) {
+    uploadSection.style.display  = 'none';
+    editorSection.style.display  = 'none';
+    progressSection.classList.remove('show');
+    document.getElementById('batch-section').classList.add('show');
+
+    const batchList = document.getElementById('batch-list');
+    batchList.innerHTML = '';
+    Array.from(files).forEach((file, i) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:0.83rem';
+      div.innerHTML = `<i class="ti ti-clock" id="batch-icon-${i}" style="color:var(--text-muted)"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span>`;
+      batchList.appendChild(div);
+    });
+
+    let done = 0;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      document.getElementById(`batch-icon-${i}`).className = 'ti ti-loader-2';
+      document.getElementById(`batch-icon-${i}`).style.color = 'var(--accent)';
+      document.getElementById('batch-progress-label').textContent = `Processing ${i + 1} of ${files.length}: ${file.name}`;
+      document.getElementById('batch-progress-fill').style.width = (i / files.length * 100) + '%';
+
+      try {
+        const resultBlobOut = await removeBackground(file, {
+          publicPath: window.location.origin + '/package/dist/',
+          model: 'medium',
+          progress: () => {},
+        });
+        const url = URL.createObjectURL(resultBlobOut);
+        const a   = document.createElement('a');
+        a.href     = url;
+        a.download = file.name.replace(/\.[^.]+$/, '') + '-no-bg.png';
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById(`batch-icon-${i}`).className = 'ti ti-check';
+        document.getElementById(`batch-icon-${i}`).style.color = '#22c55e';
+        done++;
+      } catch (e) {
+        document.getElementById(`batch-icon-${i}`).className = 'ti ti-x';
+        document.getElementById(`batch-icon-${i}`).style.color = 'var(--danger)';
+      }
+    }
+
+    document.getElementById('batch-progress-fill').style.width = '100%';
+    document.getElementById('batch-progress-label').textContent = `Done! ${done} of ${files.length} images processed.`;
+    setTimeout(() => {
+      document.getElementById('batch-section').classList.remove('show');
+      uploadSection.style.display = '';
+      toast(`Batch complete — ${done} image(s) downloaded`, 'success');
+    }, 3000);
+  }
+
+  document.getElementById('batchInput').addEventListener('change', e => {
+    const files = e.target.files;
+    if (files && files.length > 0) processBatch(files);
+    e.target.value = '';
+  });
+
+  // ── Open new ──
+  function resetToUpload() {
+    editorSection.style.display   = 'none';
+    uploadSection.style.display   = '';
+    document.getElementById('open-new-btn').style.display = 'none';
+    document.getElementById('brush-bar').classList.remove('show');
+    progressFill.style.width = '0%';
+    currentBg     = 'transparent';
+    bgImageEl     = null;
+    originalAlpha = null;
+    resultCanvas.style.cursor = '';
+    const btn = document.getElementById('bg-img-btn');
+    btn.innerHTML = '<i class="ti ti-photo" id="bg-img-icon"></i>';
+    btn.classList.remove('active');
+    document.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
+    document.querySelector('.bg-swatch.transparent').classList.add('active');
+  }
+
+  document.getElementById('open-new-btn').addEventListener('click', () => imageInput.click());
+  document.getElementById('open-new-btn2').addEventListener('click', () => imageInput.click());
+</script>
+</body>
+</html>

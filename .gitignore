@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# AI model data (downloaded separately — see README)
+package/
+*.tgz
+
+# Build artifacts
+dist/
+build/
+.output/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env files
+.env
+.env.local
+
+# Deployment platform caches
+.vercel/
+.netlify/

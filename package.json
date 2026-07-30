@@ -1,0 +1,26 @@
+{
+  "name": "actually-free-pdf-editor",
+  "version": "1.0.0",
+  "description": "A free, browser-based PDF editor with no backend or accounts required.",
+  "author": "Benjamin Davies",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/benjamindavies/actually-free-pdf-editor.git"
+  },
+  "homepage": "https://github.com/benjamindavies/actually-free-pdf-editor#readme",
+  "keywords": [
+    "pdf",
+    "editor",
+    "browser",
+    "client-side",
+    "pdf-lib",
+    "pdfjs"
+  ],
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "npx http-server -p 8000 -o",
+    "deploy:vercel": "vercel --prod",
+    "deploy:netlify": "netlify deploy --prod --dir ."
+  }
+}
