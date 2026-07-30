@@ -10,6 +10,9 @@ dist/
 build/
 .output/
 
+# Git worktrees
+.worktrees/
+
 # OS files
 .DS_Store
 Thumbs.db
