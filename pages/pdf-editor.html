@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="../js/theme.js"></script>
+    <title>PDF Editor — Actually Free Tools</title>
+    <meta
+      name="description"
+      content="Free browser-based PDF editor. Rotate, delete pages, add text and images. No uploads."
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
+    />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/pdfEditor.css" />
+
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- pdf-lib -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="../index.html" class="logo">
+        <i class="ti ti-sparkles"></i>
+        <span class="shiny-text">Actually Free Tools</span>
+      </a>
+      <nav class="site-nav">
+        <a href="pdf-editor.html" class="nav-link active">
+          <i class="ti ti-file-type-pdf"></i>
+          <span>PDF Editor</span>
+        </a>
+        <a href="bg-remover.html" class="nav-link">
+          <i class="ti ti-eraser"></i>
+          <span>BG Remover</span>
+        </a>
+        <a href="photo-editor.html" class="nav-link">
+          <i class="ti ti-adjustments-horizontal"></i>
+          <span>Photo Editor</span>
+        </a>
+      </nav>
+      <div class="header-actions">
+        <button class="btn-icon" id="theme-toggle" title="Toggle theme">
+          <i class="ti ti-moon"></i>
+        </button>
+        <button class="btn-ghost" id="open-new-btn" style="display: none">
+          <i class="ti ti-folder-open"></i>
+          <span>Open</span>
+        </button>
+        <button
+          class="btn-primary"
+          id="download-btn"
+          style="display: none"
+          disabled
+        >
+          <i class="ti ti-download"></i>
+          <span>Download PDF</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Drop zone -->
+    <div class="drop-zone dot-bg" id="drop-zone">
+      <div class="drop-box card-beam" id="drop-box">
+        <i class="ti ti-cloud-upload"></i>
+        <h2>Drop your PDF here</h2>
+        <p>or click to choose a file</p>
+        <button
+          class="btn-primary"
+          onclick="
+            event.stopPropagation();
+            fileInput.click();
+          "
+        >
+          <i class="ti ti-file-upload"></i> Choose PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Hidden file inputs -->
+    <input
+      type="file"
+      id="fileInput"
+      accept="application/pdf"
+      style="display: none"
+    />
+    <input type="file" id="imageInput" accept="image/*" style="display: none" />
+    <input
+      type="file"
+      id="mergeInput"
+      accept="application/pdf"
+      multiple
+      style="display: none"
+    />
+
+    <!-- Editor -->
+    <div id="editor">
+      <div class="toolbar">
+        <div class="page-nav">
+          <button class="btn-icon" id="prev-btn" title="Previous page">
+            <i class="ti ti-chevron-left"></i>
+          </button>
+          <input
+            type="number"
+            class="page-input"
+            id="page-input"
+            min="1"
+            value="1"
+          />
+          <span class="page-total">/ <span id="total-pages">1</span></span>
+          <button class="btn-icon" id="next-btn" title="Next page">
+            <i class="ti ti-chevron-right"></i>
+          </button>
+        </div>
+
+        <div class="toolbar-sep"></div>
+
+        <button class="btn-ghost" id="rotate-btn" title="Rotate page 90°">
+          <i class="ti ti-rotate-clockwise"></i>
+          <span>Rotate</span>
+        </button>
+        <button class="btn-danger" id="delete-btn" title="Delete current page">
+          <i class="ti ti-trash"></i>
+          <span>Delete page</span>
+        </button>
+
+        <div class="toolbar-sep"></div>
+
+        <button class="btn-ghost" id="add-text-btn" title="Add text annotation">
+          <i class="ti ti-text-size"></i>
+          <span>Add text</span>
+        </button>
+        <button class="btn-ghost" id="add-image-btn" title="Add image">
+          <i class="ti ti-photo"></i>
+          <span>Add image</span>
+        </button>
+
+        <div class="toolbar-sep"></div>
+
+        <button class="btn-ghost" id="merge-btn" title="Merge PDFs">
+          <i class="ti ti-files"></i>
+          <span>Merge</span>
+        </button>
+        <button class="btn-ghost" id="watermark-btn" title="Add watermark">
+          <i class="ti ti-droplet"></i>
+          <span>Watermark</span>
+        </button>
+        <button
+          class="btn-ghost"
+          id="form-fields-btn"
+          title="Fill form fields"
+          style="display: none"
+        >
+          <i class="ti ti-forms"></i>
+          <span>Form Fields</span>
+        </button>
+        <button class="btn-ghost" id="extract-btn" title="Extract pages">
+          <i class="ti ti-scissors"></i>
+          <span>Extract</span>
+        </button>
+        <button
+          class="btn-success"
+          id="extract-confirm-btn"
+          style="display: none"
+        >
+          Extract selected
+        </button>
+        <button class="btn-ghost" id="extract-cancel-btn" style="display: none">
+          Cancel
+        </button>
+
+        <div class="toolbar-sep"></div>
+
+        <button class="btn-icon" id="zoom-out-btn" title="Zoom out">
+          <i class="ti ti-zoom-out"></i>
+        </button>
+        <span class="zoom-display" id="zoom-display">100%</span>
+        <button class="btn-icon" id="zoom-in-btn" title="Zoom in">
+          <i class="ti ti-zoom-in"></i>
+        </button>
+        <button class="btn-icon" id="zoom-fit-btn" title="Fit page">
+          <i class="ti ti-arrows-maximize"></i>
+        </button>
+
+        <div class="toolbar-right">
+          <button class="btn-primary" id="download-btn-2">
+            <i class="ti ti-download"></i>
+            <span>Download</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="editor-body">
+        <div id="thumb-panel"></div>
+        <div id="canvas-area">
+          <div id="canvas-wrapper">
+            <canvas id="pdf-canvas"></canvas>
+            <div id="annotation-layer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text annotation popup -->
+    <div id="text-popup" class="popup-overlay">
+      <div class="popup-box">
+        <h3><i class="ti ti-text-size"></i> Add Text</h3>
+        <input
+          type="text"
+          id="text-input"
+          placeholder="Enter annotation text…"
+          maxlength="200"
+        />
+        <div class="popup-row">
+          <label>Size</label>
+          <select id="font-size-select">
+            <option value="12">12px</option>
+            <option value="14" selected>14px</option>
+            <option value="18">18px</option>
+            <option value="24">24px</option>
+            <option value="32">32px</option>
+          </select>
+        </div>
+        <div class="popup-row">
+          <label>Color</label>
+          <input type="color" id="font-color-select" value="#000000" />
+        </div>
+        <div class="popup-actions">
+          <button class="btn-ghost" id="text-cancel-btn">Cancel</button>
+          <button class="btn-primary" id="text-confirm-btn">Add to Page</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Watermark popup -->
+    <div id="watermark-popup" class="popup-overlay">
+      <div class="popup-box">
+        <h3><i class="ti ti-droplet"></i> Add Watermark</h3>
+        <input
+          type="text"
+          id="wm-text"
+          placeholder="Watermark text…"
+          value="CONFIDENTIAL"
+        />
+        <div class="popup-row">
+          <label>Opacity</label>
+          <input
+            type="range"
+            id="wm-opacity"
+            min="5"
+            max="80"
+            value="30"
+            style="width: 120px"
+          />
+          <span id="wm-opacity-val">30%</span>
+        </div>
+        <div class="popup-row">
+          <label>Angle</label>
+          <input
+            type="range"
+            id="wm-angle"
+            min="-90"
+            max="90"
+            value="45"
+            style="width: 120px"
+          />
+          <span id="wm-angle-val">45°</span>
+        </div>
+        <div class="popup-row">
+          <label>Size</label>
+          <input
+            type="range"
+            id="wm-size"
+            min="20"
+            max="120"
+            value="48"
+            style="width: 120px"
+          />
+          <span id="wm-size-val">48</span>
+        </div>
+        <div class="popup-row">
+          <label>Color</label>
+          <input type="color" id="wm-color" value="#000000" />
+        </div>
+        <div class="popup-actions">
+          <button class="btn-ghost" id="wm-cancel-btn">Cancel</button>
+          <button class="btn-primary" id="wm-apply-btn">
+            Apply to all pages
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form fields popup -->
+    <div id="form-fields-popup" class="popup-overlay">
+      <div class="popup-box" style="max-width: 480px">
+        <h3><i class="ti ti-forms"></i> Fill Form Fields</h3>
+        <div id="form-fields-list"></div>
+        <label class="form-flatten-row">
+          <input type="checkbox" id="form-flatten-checkbox" />
+          Flatten form after filling (makes values permanent, non-editable)
+        </label>
+        <div class="popup-actions">
+          <button class="btn-ghost" id="form-fields-cancel-btn">Cancel</button>
+          <button class="btn-primary" id="form-fields-apply-btn">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading">
+      <div class="spinner"></div>
+      <p>Processing…</p>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../js/pdfEditor.js"></script>
+  </body>
+</html>

@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="../js/theme.js"></script>
+    <title>Photo Editor — Actually Free Tools</title>
+    <meta
+      name="description"
+      content="Free browser-based photo editor. Adjust brightness, contrast, apply filters, crop and rotate images."
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
+    />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/photoEditor.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="../index.html" class="logo">
+        <i class="ti ti-sparkles"></i>
+        <span class="shiny-text">Actually Free Tools</span>
+      </a>
+      <nav class="site-nav">
+        <a href="pdf-editor.html" class="nav-link">
+          <i class="ti ti-file-type-pdf"></i>
+          <span>PDF Editor</span>
+        </a>
+        <a href="bg-remover.html" class="nav-link">
+          <i class="ti ti-eraser"></i>
+          <span>BG Remover</span>
+        </a>
+        <a href="photo-editor.html" class="nav-link active">
+          <i class="ti ti-adjustments-horizontal"></i>
+          <span>Photo Editor</span>
+        </a>
+      </nav>
+      <div class="header-actions">
+        <button class="btn-icon" id="theme-toggle" title="Toggle theme">
+          <i class="ti ti-moon"></i>
+        </button>
+        <button class="btn-ghost" id="open-new-btn" style="display: none">
+          <i class="ti ti-folder-open"></i>
+          <span>Open</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Drop zone -->
+    <div class="drop-zone dot-bg" id="upload-section">
+      <div class="drop-box card-beam" id="drop-box">
+        <i class="ti ti-photo-up"></i>
+        <h2>Drop an image here</h2>
+        <p>PNG, JPG, WebP, GIF supported</p>
+        <button
+          class="btn-primary"
+          onclick="
+            event.stopPropagation();
+            imageInput.click();
+          "
+        >
+          <i class="ti ti-upload"></i> Choose image
+        </button>
+      </div>
+    </div>
+
+    <input type="file" id="imageInput" accept="image/*" style="display: none" />
+
+    <!-- Editor -->
+    <div id="editor">
+      <div class="photo-toolbar">
+        <!-- Undo / Redo -->
+        <button class="btn-icon" id="undo-btn" title="Undo (Ctrl+Z)" disabled>
+          <i class="ti ti-arrow-back-up"></i>
+        </button>
+        <button
+          class="btn-icon"
+          id="redo-btn"
+          title="Redo (Ctrl+Shift+Z)"
+          disabled
+        >
+          <i class="ti ti-arrow-forward-up"></i>
+        </button>
+
+        <div class="toolbar-sep"></div>
+
+        <!-- Transform -->
+        <button class="btn-icon" id="rotate-left-btn" title="Rotate 90° left">
+          <i class="ti ti-rotate-counterclockwise"></i>
+        </button>
+        <button class="btn-icon" id="rotate-right-btn" title="Rotate 90° right">
+          <i class="ti ti-rotate-clockwise"></i>
+        </button>
+        <button class="btn-icon" id="flip-h-btn" title="Flip horizontal">
+          <i class="ti ti-flip-horizontal"></i>
+        </button>
+        <button class="btn-icon" id="flip-v-btn" title="Flip vertical">
+          <i class="ti ti-flip-vertical"></i>
+        </button>
+
+        <div class="toolbar-sep"></div>
+
+        <button class="btn-ghost" id="crop-btn" title="Crop image">
+          <i class="ti ti-crop"></i>
+          <span>Crop</span>
+        </button>
+
+        <button class="btn-ghost" id="resize-btn" title="Resize image">
+          <i class="ti ti-resize"></i>
+          <span>Resize</span>
+        </button>
+
+        <button class="btn-ghost" id="add-text-btn" title="Add text overlay">
+          <i class="ti ti-text-size"></i>
+          <span>Text</span>
+        </button>
+
+        <div class="toolbar-sep"></div>
+
+        <button class="btn-ghost" id="reset-btn" title="Reset all adjustments">
+          <i class="ti ti-refresh"></i>
+          <span>Reset</span>
+        </button>
+
+        <div class="toolbar-right">
+          <button class="btn-ghost" id="open-new-btn2">
+            <i class="ti ti-folder-open"></i>
+            <span>Open</span>
+          </button>
+          <button class="btn-primary" id="download-btn">
+            <i class="ti ti-download"></i>
+            <span>Download</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Crop mode bar -->
+      <div class="crop-active-bar" id="crop-active-bar">
+        <i class="ti ti-crop"></i>
+        Draw a selection, then apply or cancel.
+        <button
+          class="btn-success"
+          id="crop-apply-btn"
+          style="padding: 5px 12px; font-size: 0.8rem"
+        >
+          Apply crop
+        </button>
+        <button
+          class="btn-ghost"
+          id="crop-cancel-btn"
+          style="padding: 5px 12px; font-size: 0.8rem"
+        >
+          Cancel
+        </button>
+      </div>
+
+      <div class="editor-body">
+        <!-- Sidebar -->
+        <div class="sidebar">
+          <div class="sidebar-section">
+            <h4>Adjustments</h4>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <label>Brightness</label
+                ><span class="slider-val" id="brightness-val">100</span>
+              </div>
+              <input
+                type="range"
+                id="brightness"
+                min="0"
+                max="200"
+                value="100"
+              />
+            </div>
+
+            <div class="slider-group" style="margin-top: 12px">
+              <div class="slider-header">
+                <label>Contrast</label
+                ><span class="slider-val" id="contrast-val">100</span>
+              </div>
+              <input type="range" id="contrast" min="0" max="200" value="100" />
+            </div>
+
+            <div class="slider-group" style="margin-top: 12px">
+              <div class="slider-header">
+                <label>Saturation</label
+                ><span class="slider-val" id="saturation-val">100</span>
+              </div>
+              <input
+                type="range"
+                id="saturation"
+                min="0"
+                max="200"
+                value="100"
+              />
+            </div>
+
+            <div class="slider-group" style="margin-top: 12px">
+              <div class="slider-header">
+                <label>Blur</label
+                ><span class="slider-val" id="blur-val">0</span>
+              </div>
+              <input type="range" id="blur" min="0" max="20" value="0" />
+            </div>
+
+            <div class="slider-group" style="margin-top: 12px">
+              <div class="slider-header">
+                <label>Sharpen</label
+                ><span class="slider-val" id="sharpen-val">0</span>
+              </div>
+              <input type="range" id="sharpen" min="0" max="20" value="0" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-area">
+          <div class="canvas-scroll" id="canvas-scroll">
+            <canvas id="preview-canvas"></canvas>
+            <div id="crop-overlay">
+              <div id="crop-selection"></div>
+            </div>
+            <div id="text-layer"></div>
+          </div>
+
+          <!-- Filter presets -->
+          <div class="presets-row" id="presets-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resize popup -->
+    <div id="resize-popup" class="popup-overlay">
+      <div class="popup-box">
+        <h3><i class="ti ti-resize"></i> Resize Image</h3>
+        <div class="popup-row">
+          <label>Width (px)</label>
+          <input
+            type="number"
+            id="resize-w"
+            min="1"
+            max="10000"
+            style="width: 90px"
+          />
+        </div>
+        <div class="popup-row">
+          <label>Height (px)</label>
+          <input
+            type="number"
+            id="resize-h"
+            min="1"
+            max="10000"
+            style="width: 90px"
+          />
+        </div>
+        <div class="popup-row">
+          <label></label>
+          <label
+            style="
+              display: flex;
+              gap: 6px;
+              align-items: center;
+              cursor: pointer;
+            "
+          >
+            <input type="checkbox" id="lock-ratio" checked /> Lock aspect ratio
+          </label>
+        </div>
+        <div class="popup-actions">
+          <button class="btn-ghost" id="resize-cancel-btn">Cancel</button>
+          <button class="btn-primary" id="resize-apply-btn">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text overlay popup -->
+    <div id="photo-text-popup" class="popup-overlay">
+      <div class="popup-box">
+        <h3><i class="ti ti-text-size"></i> Add Text</h3>
+        <input
+          type="text"
+          id="photo-text-input"
+          placeholder="Enter text…"
+          maxlength="200"
+        />
+        <div class="popup-row">
+          <label>Size</label>
+          <input
+            type="number"
+            id="photo-text-size"
+            value="36"
+            min="8"
+            max="200"
+            style="width: 70px"
+          />
+        </div>
+        <div class="popup-row">
+          <label>Color</label>
+          <input type="color" id="photo-text-color" value="#ffffff" />
+        </div>
+        <div class="popup-actions">
+          <button class="btn-ghost" id="photo-text-cancel">Cancel</button>
+          <button class="btn-primary" id="photo-text-confirm">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export popup -->
+    <div id="export-popup" class="popup-overlay">
+      <div class="popup-box">
+        <h3><i class="ti ti-download"></i> Export Image</h3>
+        <div class="popup-row">
+          <label>Format</label>
+          <div style="display: flex; gap: 8px">
+            <button
+              class="btn-ghost active"
+              id="fmt-png"
+              onclick="setFmt('png')"
+            >
+              PNG
+            </button>
+            <button class="btn-ghost" id="fmt-jpg" onclick="setFmt('jpg')">
+              JPEG
+            </button>
+          </div>
+        </div>
+        <div class="popup-row" id="quality-row" style="display: none">
+          <label>Quality</label>
+          <input
+            type="range"
+            id="export-quality"
+            min="60"
+            max="100"
+            value="90"
+            style="width: 120px"
+          />
+          <span id="export-quality-val">90</span>
+        </div>
+        <div class="popup-actions">
+          <button class="btn-ghost" id="export-cancel-btn">Cancel</button>
+          <button class="btn-primary" id="export-confirm-btn">Download</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../js/photoEditor.js"></script>
+  </body>
+</html>

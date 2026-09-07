@@ -1,0 +1,193 @@
+main {
+  flex: 1;
+}
+
+/* ── Hero ── */
+.hero {
+  text-align: center;
+  padding: 80px 24px 56px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin-bottom: 20px;
+}
+
+.hero h1 .accent {
+  color: var(--accent);
+}
+
+.hero p {
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  max-width: 460px;
+  margin: 0 auto 32px;
+  line-height: 1.6;
+}
+
+/* ── Tool Cards ── */
+.tools-section {
+  padding: 0 24px 72px;
+  max-width: 1020px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 16px;
+}
+
+.tool-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  text-decoration: none;
+  color: var(--text);
+  transition:
+    border-color 0.18s,
+    transform 0.18s,
+    box-shadow 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+
+.tool-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--accent-rgb), 0.04) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+
+.tool-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(var(--accent-rgb), 0.18);
+}
+
+.tool-card:hover::before {
+  opacity: 1;
+}
+
+.tool-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 15px;
+  background: rgba(var(--accent-rgb), 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tool-icon i {
+  font-size: 1.9rem;
+  color: var(--accent);
+}
+
+.tool-info {
+  flex: 1;
+  min-width: 0;
+}
+.tool-info h3 {
+  font-size: 1rem;
+  font-weight: 650;
+  margin-bottom: 5px;
+}
+.tool-info p {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.tool-arrow {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  transition:
+    transform 0.15s,
+    color 0.15s;
+}
+
+.tool-card:hover .tool-arrow {
+  transform: translateX(3px);
+  color: var(--accent);
+}
+
+/* ── Features Strip ── */
+.features {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 28px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 36px;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.feature i {
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+/* ── Footer ── */
+footer {
+  text-align: center;
+  padding: 20px 24px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  border-top: 1px solid var(--border);
+}
+
+footer a {
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 48px 20px 40px;
+  }
+  .tools-section {
+    padding: 0 16px 48px;
+  }
+  .features {
+    gap: 20px;
+  }
+}
