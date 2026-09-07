@@ -4,9 +4,9 @@ A suite of free, browser-based tools. No uploads, no accounts, no backend, no co
 
 **Live tools:**
 
-- [PDF Editor](pdf-editor.html) — rotate, delete pages, add text & images
-- [Background Remover](bg-remover.html) — on-device AI, outputs transparent PNG
-- [Photo Editor](photo-editor.html) — adjustments, filters, rotate, flip, crop
+- [PDF Editor](pages/pdf-editor.html) — rotate, delete pages, add text & images
+- [Background Remover](pages/bg-remover.html) — on-device AI, outputs transparent PNG
+- [Photo Editor](pages/photo-editor.html) — adjustments, filters, rotate, flip, crop
 
 ## Features
 
@@ -80,7 +80,7 @@ Or drag the project folder onto [app.netlify.com/drop](https://app.netlify.com/d
 
 Repo Settings → Pages → Source: main branch / root → Save.
 
-Site available at `https://<username>.github.io/<repo>`.
+Site available at `https://<username>.github.io/<repo>`. (No auto-deploy workflow is included — Pages rebuilds automatically on every push once enabled.)
 
 ### Cloudflare Pages
 
@@ -93,19 +93,25 @@ All hosts support free custom domains. Add a `CNAME` record pointing to the host
 ## Project Structure
 
 ```text
-index.html           Hub / landing page
-pdf-editor.html      PDF editor tool
-bg-remover.html      Background remover tool
-photo-editor.html    Photo editor tool
-shared.css           Common styles (dark theme, header, buttons)
-package.json         Metadata + dev scripts
+index.html            Hub / landing page (stays at root)
+pages/
+  pdf-editor.html      PDF editor tool
+  bg-remover.html      Background remover tool
+  photo-editor.html    Photo editor tool
+css/
+  shared.css           Common styles (theme, header, buttons, drop zone)
+  index.css            Hub page styles
+  pdfEditor.css        PDF editor styles
+  bgRemover.css        Background remover styles
+  photoEditor.css      Photo editor styles
+js/
+  theme.js             Light/dark theme toggle (defaults to light)
+  pdfEditor.js         PDF editor logic
+  bgRemover.js         Background remover logic (ES module)
+  photoEditor.js       Photo editor logic
+package.json          Metadata + dev scripts
 .gitignore
-LICENSE              MIT
-.github/
-  workflows/
-    deploy.yml       Auto-deploy on push to main
-docs/
-  plans/             Design documents
+LICENSE               MIT
 ```
 
 ## Contributing
@@ -115,7 +121,7 @@ docs/
 3. Commit your changes
 4. Open a pull request
 
-Goal: keep the site dependency-free (CDN only), zero build step, single HTML file per tool.
+Goal: keep the site dependency-free (CDN only), zero build step, one page per tool under `pages/` with its own `css/`/`js/` files.
 
 ## License
 
