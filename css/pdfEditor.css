@@ -165,6 +165,7 @@
   pointer-events: all;
   cursor: move;
   user-select: none;
+  touch-action: none;
 }
 
 .text-annotation span {
@@ -212,6 +213,7 @@
   pointer-events: all;
   cursor: move;
   user-select: none;
+  touch-action: none;
 }
 
 .img-annotation img {
@@ -258,6 +260,7 @@
   border-radius: 3px;
   cursor: se-resize;
   display: none;
+  touch-action: none;
 }
 
 .img-annotation:hover .ann-resize {
@@ -354,15 +357,107 @@
   box-sizing: border-box;
 }
 
-@media (max-width: 600px) {
+/* Touch devices can't hover, so annotation controls that only appear
+   on :hover would otherwise be permanently invisible on mobile. */
+@media (hover: none) {
+  .text-annotation .ann-del,
+  .img-annotation .ann-del {
+    display: flex;
+    width: 22px;
+    height: 22px;
+    font-size: 13px;
+  }
+  .img-annotation .ann-resize {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 700px) {
+  /* Toolbar becomes a single horizontally-scrolling row instead of
+     wrapping to several rows, which ate too much vertical space and
+     pushed the canvas down on phones. */
   .toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
     gap: 4px;
     padding: 8px 10px;
   }
-  #canvas-area {
-    padding: 16px 8px;
+  .toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .toolbar-sep,
+  .page-nav,
+  .zoom-display,
+  .btn-icon,
+  .btn-ghost,
+  .btn-primary,
+  .btn-danger,
+  .btn-success {
+    flex-shrink: 0;
+  }
+  .toolbar-right {
+    margin-left: 0;
+  }
+
+  /* Bigger touch targets */
+  .btn-icon {
+    padding: 10px;
+  }
+  .page-input {
+    width: 40px;
+    padding: 8px 6px;
+  }
+
+  /* Stack the thumbnail rail above the page instead of beside it, so
+     the page itself keeps the full screen width to edit on. */
+  #editor-body {
+    flex-direction: column;
   }
   #thumb-panel {
-    width: 100px;
+    width: auto;
+    height: 96px;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 6px 8px;
+  }
+  .thumb {
+    flex-shrink: 0;
+    width: 60px;
+  }
+  #thumb-panel.selecting {
+    box-shadow:
+      inset 0 -3px 0 0 #f59e0b,
+      0 0 24px -6px rgba(245, 158, 11, 0.4);
+  }
+
+  #canvas-area {
+    padding: 16px 8px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  /* Popup rows: stack the label above its control so sliders and
+     inputs aren't squeezed into a couple dozen pixels. */
+  .popup-box {
+    padding: 20px;
+  }
+  .popup-row {
+    flex-wrap: wrap;
+  }
+  .popup-row label {
+    width: 100%;
+  }
+  #watermark-popup input[type="range"] {
+    flex: 1;
+    width: auto !important;
+    min-width: 0;
   }
 }

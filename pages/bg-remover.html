@@ -7,7 +7,7 @@
     <title>Background Remover — Actually Free Tools</title>
     <meta
       name="description"
-      content="Remove image backgrounds instantly in your browser using on-device AI. No uploads, no API key, free forever."
+      content="Remove image backgrounds instantly in your browser. No uploads, no API key, free forever."
     />
 
     <link
@@ -81,15 +81,6 @@
           >
             <i class="ti ti-photo-up"></i> Choose image
           </button>
-          <button
-            class="btn-ghost"
-            onclick="
-              event.stopPropagation();
-              batchInput.click();
-            "
-          >
-            <i class="ti ti-stack"></i> Batch (multiple)
-          </button>
         </div>
       </div>
     </div>
@@ -101,26 +92,6 @@
         <div class="progress-bar-fill" id="progress-fill"></div>
       </div>
       <p class="progress-label" id="progress-label">Loading...</p>
-    </div>
-
-    <!-- Batch section -->
-    <div class="progress-wrap" id="batch-section" style="gap: 12px">
-      <h3 style="color: var(--text); margin: 0">Batch Processing</h3>
-      <div
-        id="batch-list"
-        style="
-          width: min(400px, 100%);
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          max-height: 300px;
-          overflow-y: auto;
-        "
-      ></div>
-      <div class="progress-bar-track" style="width: min(360px, 100%)">
-        <div class="progress-bar-fill" id="batch-progress-fill"></div>
-      </div>
-      <p class="progress-label" id="batch-progress-label">Processing…</p>
     </div>
 
     <!-- Editor section -->

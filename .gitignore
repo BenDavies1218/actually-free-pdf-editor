@@ -1,10 +1,6 @@
 # Dependencies
 node_modules/
 
-# AI model data (downloaded separately — see README)
-package/
-*.tgz
-
 # Build artifacts
 dist/
 build/

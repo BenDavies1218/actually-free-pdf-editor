@@ -46,14 +46,13 @@ async function processImage(file) {
 
   try {
     const resultBlobOut = await removeBackground(file, {
-      publicPath: window.location.origin + "/package/dist/",
       model: "medium",
       progress: (key, current, total) => {
         if (total > 0) {
           const pct = Math.round((current / total) * 100);
           progressFill.style.width = pct + "%";
           if (key.includes("fetch") || key.includes("load")) {
-            progressLabel.textContent = `Loading AI model… ${pct}% (cached after first run)`;
+            progressLabel.textContent = `Loading… ${pct}%`;
           } else {
             progressLabel.textContent = `Removing background… ${pct}%`;
           }
@@ -103,9 +102,7 @@ function applyBackground(bg) {
 
   if (bg === "transparent") {
     resultBgCanvas.style.display = "none";
-    document.querySelector(
-      ".panel-canvas.checkerboard",
-    ).style.background = "";
+    document.querySelector(".panel-canvas.checkerboard").style.background = "";
   } else if (bg === "image" && bgImageEl) {
     resultBgCanvas.style.display = "block";
     bgCtx.drawImage(
@@ -139,12 +136,10 @@ document.querySelectorAll(".bg-swatch").forEach((swatch) => {
   });
 });
 
-document
-  .getElementById("bg-color-picker")
-  .addEventListener("input", (e) => {
-    setActiveSwatch(null);
-    applyBackground(e.target.value);
-  });
+document.getElementById("bg-color-picker").addEventListener("input", (e) => {
+  setActiveSwatch(null);
+  applyBackground(e.target.value);
+});
 
 // ── Bg image replacement ──
 document.getElementById("bg-img-btn").addEventListener("click", () => {
@@ -178,22 +173,18 @@ bgImageInput.addEventListener("change", (e) => {
 });
 
 // ── Copy to clipboard ──
-document
-  .getElementById("copy-btn")
-  .addEventListener("click", async () => {
-    if (!resultCanvas) return;
-    try {
-      const blob = await new Promise((resolve) =>
-        resultCanvas.toBlob(resolve, "image/png"),
-      );
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
-      ]);
-      toast("Copied to clipboard!", "success");
-    } catch (e) {
-      toast("Copy failed — try downloading instead", "error");
-    }
-  });
+document.getElementById("copy-btn").addEventListener("click", async () => {
+  if (!resultCanvas) return;
+  try {
+    const blob = await new Promise((resolve) =>
+      resultCanvas.toBlob(resolve, "image/png"),
+    );
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    toast("Copied to clipboard!", "success");
+  } catch (e) {
+    toast("Copy failed — try downloading instead", "error");
+  }
+});
 
 // ── Touch-up brush ──
 function paintBrush(cx, cy) {
@@ -241,72 +232,64 @@ window.addEventListener("mouseup", () => {
   isBrushing = false;
 });
 
-document
-  .getElementById("brush-erase-btn")
-  .addEventListener("click", () => {
-    touchupMode = "erase";
-    document.getElementById("brush-erase-btn").classList.add("active");
-    document
-      .getElementById("brush-restore-btn")
-      .classList.remove("active");
-  });
+document.getElementById("brush-erase-btn").addEventListener("click", () => {
+  touchupMode = "erase";
+  document.getElementById("brush-erase-btn").classList.add("active");
+  document.getElementById("brush-restore-btn").classList.remove("active");
+});
 
-document
-  .getElementById("brush-restore-btn")
-  .addEventListener("click", () => {
-    touchupMode = "restore";
-    document.getElementById("brush-restore-btn").classList.add("active");
-    document.getElementById("brush-erase-btn").classList.remove("active");
-  });
+document.getElementById("brush-restore-btn").addEventListener("click", () => {
+  touchupMode = "restore";
+  document.getElementById("brush-restore-btn").classList.add("active");
+  document.getElementById("brush-erase-btn").classList.remove("active");
+});
 
 document.getElementById("brush-size").addEventListener("input", (e) => {
   document.getElementById("brush-size-val").textContent = e.target.value;
 });
 
 // ── Download ──
-document
-  .getElementById("download-btn")
-  .addEventListener("click", async () => {
-    if (!resultBlob) return;
+document.getElementById("download-btn").addEventListener("click", async () => {
+  if (!resultBlob) return;
 
-    if (currentBg === "transparent") {
-      const blob = await new Promise((resolve) =>
-        resultCanvas.toBlob(resolve, "image/png"),
-      );
+  if (currentBg === "transparent") {
+    const blob = await new Promise((resolve) =>
+      resultCanvas.toBlob(resolve, "image/png"),
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "background-removed.png";
+    a.click();
+    URL.revokeObjectURL(url);
+  } else {
+    const tmp = document.createElement("canvas");
+    tmp.width = resultCanvas.width;
+    tmp.height = resultCanvas.height;
+    const tmpCtx = tmp.getContext("2d");
+    if (currentBg === "image" && bgImageEl) {
+      tmpCtx.drawImage(bgImageEl, 0, 0, tmp.width, tmp.height);
+    } else {
+      tmpCtx.fillStyle =
+        currentBg === "white"
+          ? "#ffffff"
+          : currentBg === "black"
+            ? "#111111"
+            : currentBg;
+      tmpCtx.fillRect(0, 0, tmp.width, tmp.height);
+    }
+    tmpCtx.drawImage(resultCanvas, 0, 0);
+    tmp.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = "background-removed.png";
       a.click();
       URL.revokeObjectURL(url);
-    } else {
-      const tmp = document.createElement("canvas");
-      tmp.width = resultCanvas.width;
-      tmp.height = resultCanvas.height;
-      const tmpCtx = tmp.getContext("2d");
-      if (currentBg === "image" && bgImageEl) {
-        tmpCtx.drawImage(bgImageEl, 0, 0, tmp.width, tmp.height);
-      } else {
-        tmpCtx.fillStyle =
-          currentBg === "white"
-            ? "#ffffff"
-            : currentBg === "black"
-              ? "#111111"
-              : currentBg;
-        tmpCtx.fillRect(0, 0, tmp.width, tmp.height);
-      }
-      tmpCtx.drawImage(resultCanvas, 0, 0);
-      tmp.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "background-removed.png";
-        a.click();
-        URL.revokeObjectURL(url);
-      }, "image/png");
-    }
-    toast("Image downloaded!", "success");
-  });
+    }, "image/png");
+  }
+  toast("Image downloaded!", "success");
+});
 
 // ── File input ──
 imageInput.addEventListener("change", (e) => {
@@ -351,10 +334,8 @@ async function processBatch(files) {
   let done = 0;
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    document.getElementById(`batch-icon-${i}`).className =
-      "ti ti-loader-2";
-    document.getElementById(`batch-icon-${i}`).style.color =
-      "var(--accent)";
+    document.getElementById(`batch-icon-${i}`).className = "ti ti-loader-2";
+    document.getElementById(`batch-icon-${i}`).style.color = "var(--accent)";
     document.getElementById("batch-progress-label").textContent =
       `Processing ${i + 1} of ${files.length}: ${file.name}`;
     document.getElementById("batch-progress-fill").style.width =
@@ -362,7 +343,6 @@ async function processBatch(files) {
 
     try {
       const resultBlobOut = await removeBackground(file, {
-        publicPath: window.location.origin + "/package/dist/",
         model: "medium",
         progress: () => {},
       });
@@ -372,14 +352,12 @@ async function processBatch(files) {
       a.download = file.name.replace(/\.[^.]+$/, "") + "-no-bg.png";
       a.click();
       URL.revokeObjectURL(url);
-      document.getElementById(`batch-icon-${i}`).className =
-        "ti ti-check";
+      document.getElementById(`batch-icon-${i}`).className = "ti ti-check";
       document.getElementById(`batch-icon-${i}`).style.color = "#22c55e";
       done++;
     } catch (e) {
       document.getElementById(`batch-icon-${i}`).className = "ti ti-x";
-      document.getElementById(`batch-icon-${i}`).style.color =
-        "var(--danger)";
+      document.getElementById(`batch-icon-${i}`).style.color = "var(--danger)";
     }
   }
 
@@ -416,9 +394,7 @@ function resetToUpload() {
   document
     .querySelectorAll(".bg-swatch")
     .forEach((s) => s.classList.remove("active"));
-  document
-    .querySelector(".bg-swatch.transparent")
-    .classList.add("active");
+  document.querySelector(".bg-swatch.transparent").classList.add("active");
 }
 
 document

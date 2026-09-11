@@ -1,11 +1,20 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
+const DEFAULT_SCALE = 1.5;
+const DEFAULT_SCALE_MOBILE = 0.6;
+function isMobileViewport() {
+  return window.matchMedia("(max-width: 700px)").matches;
+}
+function defaultScale() {
+  return isMobileViewport() ? DEFAULT_SCALE_MOBILE : DEFAULT_SCALE;
+}
+
 let pdfDoc = null;
 let pdfLibDoc = null;
 let currentPage = 1;
 let totalPages = 0;
-let scale = 1.5;
+let scale = defaultScale();
 let annotations = {};
 let originalFileName = "edited.pdf";
 let dragFromPage = null;
@@ -59,6 +68,8 @@ async function loadPDFBytes(bytes, name) {
 
     totalPages = pdfDoc.numPages;
     currentPage = 1;
+    scale = defaultScale();
+    zoomDisplay.textContent = Math.round((scale / DEFAULT_SCALE) * 100) + "%";
     annotations = {};
 
     totalEl.textContent = totalPages;
@@ -199,7 +210,7 @@ function renderTextAnnotation(ann, idx) {
 
   el.appendChild(span);
   el.appendChild(del);
-  el.addEventListener("mousedown", startDrag(ann, el));
+  el.addEventListener("pointerdown", startDrag(ann, el));
   annLayer.appendChild(el);
 }
 
@@ -226,9 +237,10 @@ function renderImageAnnotation(ann, idx) {
 
   const resizeHandle = document.createElement("div");
   resizeHandle.className = "ann-resize";
-  resizeHandle.addEventListener("mousedown", (e) => {
+  resizeHandle.addEventListener("pointerdown", (e) => {
     e.stopPropagation();
     e.preventDefault();
+    resizeHandle.setPointerCapture(e.pointerId);
     const aspect = ann.width / ann.height;
     const startX = e.clientX;
     const startW = ann.width;
@@ -240,17 +252,19 @@ function renderImageAnnotation(ann, idx) {
       img.style.height = ann.height + "px";
     }
     function onUp() {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      resizeHandle.removeEventListener("pointermove", onMove);
+      resizeHandle.removeEventListener("pointerup", onUp);
+      resizeHandle.removeEventListener("pointercancel", onUp);
     }
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    resizeHandle.addEventListener("pointermove", onMove);
+    resizeHandle.addEventListener("pointerup", onUp);
+    resizeHandle.addEventListener("pointercancel", onUp);
   });
 
   el.appendChild(img);
   el.appendChild(del);
   el.appendChild(resizeHandle);
-  el.addEventListener("mousedown", startDrag(ann, el));
+  el.addEventListener("pointerdown", startDrag(ann, el));
   annLayer.appendChild(el);
 }
 
@@ -262,6 +276,7 @@ function startDrag(ann, el) {
     )
       return;
     e.preventDefault();
+    el.setPointerCapture(e.pointerId);
     const startX = e.clientX - ann.x;
     const startY = e.clientY - ann.y;
     function onMove(ev) {
@@ -271,11 +286,13 @@ function startDrag(ann, el) {
       el.style.top = ann.y + "px";
     }
     function onUp() {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
     }
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
   };
 }
 
@@ -358,7 +375,7 @@ document
 
 function setZoom(newScale) {
   scale = Math.max(0.4, Math.min(3, newScale));
-  zoomDisplay.textContent = Math.round((scale / 1.5) * 100) + "%";
+  zoomDisplay.textContent = Math.round((scale / DEFAULT_SCALE) * 100) + "%";
   renderPage(currentPage);
 }
 
@@ -370,7 +387,7 @@ document
   .addEventListener("click", () => setZoom(scale - 0.3));
 document
   .getElementById("zoom-fit-btn")
-  .addEventListener("click", () => setZoom(1.5));
+  .addEventListener("click", () => setZoom(defaultScale()));
 
 document.addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT") return;

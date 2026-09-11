@@ -47,19 +47,6 @@
         <button class="btn-icon" id="theme-toggle" title="Toggle theme">
           <i class="ti ti-moon"></i>
         </button>
-        <button class="btn-ghost" id="open-new-btn" style="display: none">
-          <i class="ti ti-folder-open"></i>
-          <span>Open</span>
-        </button>
-        <button
-          class="btn-primary"
-          id="download-btn"
-          style="display: none"
-          disabled
-        >
-          <i class="ti ti-download"></i>
-          <span>Download PDF</span>
-        </button>
       </div>
     </header>
 
@@ -110,6 +97,8 @@
             id="page-input"
             min="1"
             value="1"
+            inputmode="numeric"
+            pattern="[0-9]*"
           />
           <span class="page-total">/ <span id="total-pages">1</span></span>
           <button class="btn-icon" id="next-btn" title="Next page">
@@ -187,9 +176,18 @@
         </button>
 
         <div class="toolbar-right">
-          <button class="btn-primary" id="download-btn-2">
+          <button class="btn-ghost" id="open-new-btn" style="display: none">
+            <i class="ti ti-folder-open"></i>
+            <span>Open</span>
+          </button>
+          <button
+            class="btn-primary"
+            id="download-btn"
+            style="display: none"
+            disabled
+          >
             <i class="ti ti-download"></i>
-            <span>Download</span>
+            <span>Download PDF</span>
           </button>
         </div>
       </div>

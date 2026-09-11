@@ -613,4 +613,13 @@ button:disabled {
   button span {
     display: none;
   }
+  #toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    align-items: stretch;
+  }
+  .toast {
+    max-width: none;
+  }
 }
