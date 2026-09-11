@@ -1,0 +1,48 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::084828606859:role/gh-actions-actually-free-pdf-editor-deploy
+          aws-region: ap-southeast-2
+
+      - name: Sync site files to S3
+        run: |
+          aws s3 sync . s3://actually-free-pdf-editor/ \
+            --exclude ".git/*" \
+            --exclude ".github/*" \
+            --exclude ".gitignore" \
+            --exclude ".gitattributes" \
+            --exclude "README.md" \
+            --exclude "LICENSE" \
+            --exclude "package.json" \
+            --exclude "start.sh" \
+            --exclude ".DS_Store" \
+            --exclude "*.DS_Store" \
+            --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ESIAZT5D31CKI \
+            --paths "/*"
