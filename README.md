@@ -86,6 +86,10 @@ Site available at `https://<username>.github.io/<repo>`. (No auto-deploy workflo
 
 [pages.cloudflare.com](https://pages.cloudflare.com) → Create project → Connect GitHub → leave build settings blank → Deploy.
 
+### AWS (S3 + CloudFront)
+
+Production is hosted on AWS: an S3 origin served through CloudFront (HTTPS, no public bucket access), with DNS on Cloudflare. Deploys run automatically on every push to `main` via GitHub Actions (`.github/workflows/deploy.yml`), authenticating through GitHub's OIDC provider to a least-privilege IAM role — no long-lived AWS credentials are stored in this repo. A manual redeploy can also be triggered from the Actions tab.
+
 ## Custom Domain
 
 All hosts support free custom domains. Add a `CNAME` record pointing to the host's domain — takes under 10 minutes.
